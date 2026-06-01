@@ -1,0 +1,27 @@
+{
+  "name": "hq-fyi-bot",
+  "version": "0.1.0",
+  "description": "Relay allowlisted X mentions of a target handle into Slack.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "hq-fyi-bot": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js run",
+    "test": "node --test",
+    "smoke:fixture": "node src/cli.js process-fixture test/fixtures/mention-event.json",
+    "backfill": "node src/cli.js backfill-once",
+    "health": "node src/cli.js health"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "x",
+    "twitter",
+    "slack",
+    "bot",
+    "webhook"
+  ]
+}

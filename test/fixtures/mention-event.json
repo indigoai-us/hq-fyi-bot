@@ -1,0 +1,17 @@
+{
+  "data": {
+    "id": "1000000000000000001",
+    "author_id": "12345",
+    "text": "Testing @hq_fyi from the allowlisted account",
+    "created_at": "2026-05-31T00:35:57Z"
+  },
+  "includes": {
+    "users": [
+      {
+        "id": "12345",
+        "username": "example_author",
+        "name": "Example Author"
+      }
+    ]
+  }
+}
