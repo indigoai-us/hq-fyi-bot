@@ -17,15 +17,51 @@ snapshot, and suppresses posts from authors outside your configured allowlist.
 No token or webhook value belongs in git, logs, issues, PRs, or chat. Use your
 secret manager in production.
 
-## Quick Start
+## Getting Started
+
+### 1. Clone and verify the project
 
 ```bash
+git clone https://github.com/indigoai-us/hq-fyi-bot.git
+cd hq-fyi-bot
 npm test
+```
+
+The project has no runtime npm dependencies. The test command uses Node's
+built-in test runner and should pass before you add real credentials.
+
+### 2. Create provider credentials
+
+Create these outside the repo:
+
+- X API bearer token with access to filtered stream and recent search.
+- Slack incoming webhook URL for the channel that should receive mentions.
+
+Keep both values in a password manager, deployment secret store, or your shell
+environment. Do not paste real credentials into `.env.example`, issues, PRs, or
+logs.
+
+### 3. Configure local environment
+
+Copy the example file and edit the copy:
+
+```bash
 cp .env.example .env
 ```
 
-Edit `.env`, then export it into your shell. The app intentionally does not load
-`.env` files by itself.
+Set at least these values:
+
+```bash
+X_BEARER_TOKEN=...
+SLACK_WEBHOOK_URL=...
+HQ_X_TARGET_HANDLE=hq_fyi
+HQ_X_ALLOWED_AUTHORS=example_author,another_author
+HQ_X_RULE_VALUE='@hq_fyi -is:retweet'
+SLACK_DRY_RUN=1
+```
+
+The app intentionally does not load `.env` files by itself. Export the file into
+your shell before running commands:
 
 ```bash
 set -a
@@ -33,15 +69,22 @@ source .env
 set +a
 ```
 
-Run the fixture smoke test first. It defaults to `SLACK_DRY_RUN=1`, so it does
-not post to Slack.
+### 4. Run a dry-run smoke test
+
+The fixture smoke test formats a Slack message and exercises the dedupe path
+without posting to Slack:
 
 ```bash
 npm run smoke:fixture
 ```
 
-Create or update your X filtered stream rule. If you already manage rules
-elsewhere, keep `HQ_X_RULE_VALUE` aligned with that rule.
+You should see a JSON result with `"status": "delivered"` and `"dryRun": true`.
+
+### 5. Create the X stream rule
+
+Create or update your X filtered stream rule so the API sends matching posts to
+the stream. If you already manage rules elsewhere, keep `HQ_X_RULE_VALUE`
+aligned with that rule.
 
 ```bash
 curl -X POST "https://api.x.com/2/tweets/search/stream/rules" \
@@ -50,10 +93,38 @@ curl -X POST "https://api.x.com/2/tweets/search/stream/rules" \
   --data "$(node -e 'console.log(JSON.stringify({ add: [{ value: process.env.HQ_X_RULE_VALUE, tag: "hq-fyi-bot" }] }))')"
 ```
 
-Start the stream consumer:
+To inspect existing rules:
+
+```bash
+curl "https://api.x.com/2/tweets/search/stream/rules" \
+  -H "Authorization: Bearer $X_BEARER_TOKEN"
+```
+
+### 6. Start the bot
+
+Keep `SLACK_DRY_RUN=1` for the first live stream test if you only want logs and
+local state writes. Set it to `0` when you are ready to post to Slack:
 
 ```bash
 SLACK_DRY_RUN=0 npm start
+```
+
+The bot now waits for future matching X events. It does not backfill posts that
+already existed before startup.
+
+### 7. Check health and backfill one mention
+
+Read the local health snapshot:
+
+```bash
+npm run health
+```
+
+If a valid mention was posted before the stream consumer was running, process
+one recent-search result with the same rule:
+
+```bash
+npm run backfill
 ```
 
 ## Configuration
